@@ -25,7 +25,11 @@ fi
 
 sudo install -d -m 0750 backups/manual
 archive="backups/manual/config-$(date +%Y%m%d-%H%M%S).tar.gz"
-sudo tar -czf "$archive" -C . config
+backup_paths=(config)
+if [[ -d mods ]]; then
+  backup_paths+=(mods)
+fi
+sudo tar -czf "$archive" -C . "${backup_paths[@]}"
 sudo tar -tzf "$archive" >/dev/null
 
 manual_retention="$(sed -n 's/^MANUAL_BACKUP_RETENTION_DAYS=//p' .env | tail -n 1)"

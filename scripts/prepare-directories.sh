@@ -5,6 +5,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 mkdir -p "$ROOT_DIR/config/worlds_local" \
          "$ROOT_DIR/data" \
+         "$ROOT_DIR/mods/BepInEx/plugins" \
+         "$ROOT_DIR/mods/BepInEx/config" \
+         "$ROOT_DIR/mods/doorstop_libs" \
+         "$ROOT_DIR/mods/unstripped_corlib" \
          "$ROOT_DIR/backups/valheim" \
          "$ROOT_DIR/backups/manual" \
          "$ROOT_DIR/steam-diagnostics"

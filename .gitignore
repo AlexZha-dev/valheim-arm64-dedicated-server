@@ -1,4 +1,5 @@
 .env
+.env.test
 config/worlds_local/
 config/backups/
 config/adminlist.txt
@@ -7,6 +8,10 @@ config/permittedlist.txt
 config/*.vdf
 backups/
 data/
+mods/
+mods.previous-*/
+.modpack-staging.*
+test/
 steam-diagnostics/
 *.log
 .DS_Store

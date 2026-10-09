@@ -11,10 +11,13 @@ The Raspberry Pi runs the ARM64 operating system, while SteamCMD and the Valheim
 - `compose.yaml` - Valheim with its integrated, retention-limited backup scheduler.
 - `Dockerfile` - Raspberry Pi 4 image using Box32 for SteamCMD and Box64 for Valheim.
 - `docker/patch-upstream-for-box32.sh` - build-time adaptation of the pinned Valheim scripts for Box32 SteamCMD.
+- `docker/valheim-box64.sh` - Box64 wrapper with opt-in BepInEx injection for the dedicated server only.
 - `UPSTREAM.md` - pinned image references and the safe procedure for updating them.
+- `MODS.md` - safe opt-in workflow for user-maintained BepInEx server modpacks.
 - `.env.example` - safe template for server settings; copy it to `.env` before starting.
 - `scripts/prepare-directories.sh` - creates persistent data directories.
-- `scripts/backup.sh` - creates a verified archive of the complete `config` directory.
+- `scripts/backup.sh` - creates a verified archive of `config` and the active modpack, if present.
+- `scripts/install-modpack.sh` - validates and atomically installs a user-provided BepInEx server pack.
 - `scripts/health.sh` - reports container, resource, temperature, throttling and network status.
 - `scripts/ufw-zerotier.sh` - optional firewall helper for a ZeroTier-style private overlay.
 - `COMMANDS.md` - short operational command reference.
@@ -25,7 +28,9 @@ No world save, administrator ID, password, Steam credentials or machine-specific
 
 - Raspberry Pi 4 with a 64-bit OS (`aarch64` / `arm64`).
 - Docker Engine and the Docker Compose plugin.
-- At least 4 GB of free disk space for the game files and working space.
+- At least 4 GB of free disk space for the vanilla server; reserve at least
+  10 GB when using the isolated mod-test server because it has its own game
+  data directory.
 - Internet access from the Pi for SteamCMD, game updates and Crossplay/PlayFab registration.
 - A Valheim client version compatible with the server version.
 
@@ -126,6 +131,14 @@ chmod +x scripts/*.sh
 ```
 
 The default save interval is 15 minutes (`SAVEINTERVAL=900`). Change it in `.env` and recreate the container when needed.
+
+### Optional mods
+
+The server is vanilla by default. `MODS_ENABLED=false` keeps BepInEx disabled;
+setting it to `true` enables a user-managed pack mounted from `./mods`. Read
+[`MODS.md`](MODS.md) before enabling it. In particular, Xbox/console players
+cannot run BepInEx client mods, and Crossplay compatibility is a property of
+each individual modpack rather than this Docker setup.
 
 ## 4. Crossplay with a Join Code (recommended)
 
@@ -267,7 +280,7 @@ sudo ./scripts/backup.sh
 ls -lah backups/manual backups/valheim config/worlds_local
 ```
 
-The manual archive contains `config` (worlds and access lists), is made only after a clean server stop, and is verified before the server is started again. `MANUAL_BACKUP_RETENTION_DAYS=30` controls its cleanup; set it to `0` to retain manual archives indefinitely.
+The manual archive contains `config` (worlds and access lists) and `mods/` when present. It is made only after a clean server stop and is verified before the server is started again. `MANUAL_BACKUP_RETENTION_DAYS=30` controls its cleanup; set it to `0` to retain manual archives indefinitely.
 
 ### Migrating from the previous duplicate-backup setup
 
@@ -335,6 +348,7 @@ The game server is still running when `logs -f` is closed. Check `docker compose
 /srv/valheim/backups/manual        verified manual archives, age-pruned
 /srv/valheim/backups/legacy        preserved pre-migration archives, never auto-pruned
 /srv/valheim/data                  downloaded Valheim files
+/srv/valheim/mods                  optional BepInEx server pack, outside Git
 /srv/valheim/steam-diagnostics     SteamCMD logs
 ```
 

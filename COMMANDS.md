@@ -106,6 +106,30 @@ sudo docker compose logs --tail=100 valheim
 
 Check the `Final Valheim parameters` line in the log.
 
+## Optional BepInEx modpack
+
+The detailed workflow is in [`MODS.md`](MODS.md). Vanilla is the default:
+
+```dotenv
+MODS_ENABLED=false
+```
+
+Install a complete, user-maintained BepInEx server pack only while its target
+container is stopped:
+
+```bash
+sudo docker compose stop -t 180 valheim
+bash scripts/install-modpack.sh /home/USER/server-modpack.zip
+sed -i 's/^MODS_ENABLED=.*/MODS_ENABLED=true/' .env
+sudo docker compose up -d --no-build --force-recreate valheim
+sudo docker compose logs -f --tail=200 valheim
+bash scripts/modpack-status.sh
+```
+
+Use `compose.test.yaml` with `.env.test` and `-p valheim-mod-test` to test a
+pack on port `2458` before production. Keep Crossplay only for packs whose
+authors explicitly support dedicated Crossplay.
+
 ## Admin and access lists
 
 ```dotenv

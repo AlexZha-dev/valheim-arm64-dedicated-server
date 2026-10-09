@@ -10,7 +10,7 @@ FROM ${STEAMCMD_IMAGE}
 
 USER root
 ENV ARM64_DEVICE=rpi4 \
-    DEBUGGER=/usr/local/bin/box64 \
+    DEBUGGER=/usr/local/bin/valheim-box64 \
     STEAM_PLATFORM=linux32
 
 # The paths below are a contract with the pinned valheim_scripts image.
@@ -21,6 +21,7 @@ COPY --from=valheim_scripts /usr/local/bin/valheim-updater /usr/local/bin/valhei
 COPY --from=valheim_scripts /usr/lib/x86_64-linux-gnu/libogg.so.0 /usr/lib/x86_64-linux-gnu/libogg.so.0
 
 COPY --chmod=0755 docker/patch-upstream-for-box32.sh /usr/local/sbin/patch-upstream-for-box32
+COPY --chmod=0755 docker/valheim-box64.sh /usr/local/bin/valheim-box64
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -28,6 +29,7 @@ RUN apt-get update \
         libsdl2-2.0-0 libsdl3-0 \
     && chown -R root:root /home/steam/steamcmd \
     && /usr/local/sbin/patch-upstream-for-box32 \
+    && bash -n /usr/local/bin/valheim-box64 \
     && mkdir -p /opt/valheim \
     && rm -f /usr/local/sbin/patch-upstream-for-box32 \
     && apt-get clean \

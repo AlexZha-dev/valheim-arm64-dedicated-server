@@ -21,6 +21,8 @@ services:
       # Windows as C:\\Users\\Public and would override a .env value.
       PUBLIC: "${SERVER_PUBLIC:-0}"
       CROSSPLAY: "${CROSSPLAY:-true}"
+      # Opt-in BepInEx support. The server remains vanilla when false.
+      MODS_ENABLED: "${MODS_ENABLED:-false}"
       # Optional world difficulty/modifier flags, passed after the standard
       # server arguments. Example: -preset hard -modifier raids none
       SERVER_ARGS: "${SERVER_ARGS:-}"
@@ -59,7 +61,7 @@ services:
       RESTART_CRON: "${RESTART_CRON:-}"
       RESTART_IF_IDLE: "${RESTART_IF_IDLE:-true}"
       ARM64_DEVICE: "rpi4"
-      DEBUGGER: "/usr/local/bin/box64"
+      DEBUGGER: "/usr/local/bin/valheim-box64"
       STEAM_PLATFORM: "linux32"
       BOX64_AES: "0"
       BOX64_PCLMULQDQ: "0"
@@ -78,6 +80,11 @@ services:
       # Keep generated rolling archives outside config/worlds_local.
       - ./backups/valheim:/config/backups
       - ./steam-diagnostics:/root/Steam/logs
+      # A full BepInEx server pack is installed below ./mods. These mounts
+      # survive Valheim updates and are inert while MODS_ENABLED=false.
+      - ./mods/BepInEx:/opt/valheim/valheim_server/BepInEx
+      - ./mods/doorstop_libs:/opt/valheim/valheim_server/doorstop_libs:ro
+      - ./mods/unstripped_corlib:/opt/valheim/valheim_server/unstripped_corlib:ro
     logging:
       driver: json-file
       options:

@@ -1,0 +1,24 @@
+# Test override. Always use it together with compose.yaml and -p valheim-mod-test.
+# It never mounts production config/, data/, mods/ or backups/.
+services:
+  valheim:
+    container_name: valheim-mod-test
+    restart: "no"
+    environment:
+      NAME: "${TEST_NAME:-Valheim Mod Test}"
+      PORT: "${TEST_PORT:-2458}"
+      WORLD: "${TEST_WORLD:-ModTestWorld}"
+      PASSWORD: "${TEST_PASSWORD:?Set TEST_PASSWORD in .env.test}"
+      PASSWORD_FILE: ""
+      PUBLIC: "${TEST_SERVER_PUBLIC:-0}"
+      CROSSPLAY: "${TEST_CROSSPLAY:-false}"
+      MODS_ENABLED: "${TEST_MODS_ENABLED:-true}"
+      UPDATE_INTERVAL: "0"
+    volumes:
+      - ./test/config:/config
+      - ./test/data:/opt/valheim
+      - ./test/backups/valheim:/config/backups
+      - ./test/steam-diagnostics:/root/Steam/logs
+      - ./test/mods/BepInEx:/opt/valheim/valheim_server/BepInEx
+      - ./test/mods/doorstop_libs:/opt/valheim/valheim_server/doorstop_libs:ro
+      - ./test/mods/unstripped_corlib:/opt/valheim/valheim_server/unstripped_corlib:ro

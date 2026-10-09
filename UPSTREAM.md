@@ -26,6 +26,11 @@ the upstream scripts from their native `linuxarm64` SteamCMD to the
 Box32-managed `linux32` SteamCMD at `/home/steam/steamcmd`. It also validates
 the expected source patterns, executable files and shell syntax during build.
 
+`docker/valheim-box64.sh` is a local runtime wrapper. It passes SteamCMD
+through to Box64 unchanged and enables BepInEx only for `valheim_server.x86_64`
+when `MODS_ENABLED=true`. It uses Box64's guest-library variables for the
+x86_64 Doorstop preloader; it does not modify the imported upstream scripts.
+
 ## Updating an upstream image
 
 Do not replace a digest with a floating tag. Make one dedicated update commit:
