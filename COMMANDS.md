@@ -128,6 +128,9 @@ sudo docker compose build --pull
 sudo docker compose up -d --no-build
 ```
 
+Base images are pinned. A regular build is reproducible; follow `UPSTREAM.md`
+for a deliberate base-image update.
+
 Do not remove `config` and do not run `docker compose down -v` when the world must be preserved.
 
 ## Raspberry Pi health

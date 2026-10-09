@@ -10,6 +10,8 @@ The Raspberry Pi runs the ARM64 operating system, while SteamCMD and the Valheim
 
 - `compose.yaml` - Valheim with its integrated, retention-limited backup scheduler.
 - `Dockerfile` - Raspberry Pi 4 image using Box32 for SteamCMD and Box64 for Valheim.
+- `docker/patch-upstream-for-box32.sh` - build-time adaptation of the pinned Valheim scripts for Box32 SteamCMD.
+- `UPSTREAM.md` - pinned image references and the safe procedure for updating them.
 - `.env.example` - safe template for server settings; copy it to `.env` before starting.
 - `scripts/prepare-directories.sh` - creates persistent data directories.
 - `scripts/backup.sh` - creates a verified archive of the complete `config` directory.
@@ -291,6 +293,10 @@ sudo docker compose stop -t 180
 sudo docker compose build --pull
 sudo docker compose up -d --no-build
 ```
+
+The base images are pinned by digest, so this rebuild fetches the same tested
+dependencies even when `--pull` is used. Read `UPSTREAM.md` before intentionally
+updating a base image; update and validate one digest at a time.
 
 Do not run `docker compose down -v` and do not delete `config` if you need to keep the world.
 
