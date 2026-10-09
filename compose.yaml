@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: valheim-pi4-box32:local
+    image: valheim-arm64-box32:local
     platform: linux/arm64
     container_name: valheim
     network_mode: host
@@ -60,14 +60,16 @@ services:
       SERVER_STOP_TIMEOUT: "${SERVER_STOP_TIMEOUT:-150}"
       RESTART_CRON: "${RESTART_CRON:-}"
       RESTART_IF_IDLE: "${RESTART_IF_IDLE:-true}"
-      ARM64_DEVICE: "rpi4"
+      # Selects the Box64 build for the host CPU. "generic" is portable;
+      # optimized profiles such as rpi4 and rk3588 are opt-in through .env.
+      ARM64_DEVICE: "${ARM64_DEVICE:-generic}"
       DEBUGGER: "/usr/local/bin/valheim-box64"
       STEAM_PLATFORM: "linux32"
       BOX64_AES: "0"
       BOX64_PCLMULQDQ: "0"
       BOX64_SHAEXT: "0"
       BOX64_AVX: "0"
-      # More conservative dynarec settings improve stability on Pi 4.
+      # Conservative dynarec settings favor compatibility across ARM64 hosts.
       BOX64_DYNAREC_BIGBLOCK: "0"
       BOX64_DYNAREC_STRONGMEM: "3"
       BOX64_DYNAREC_SAFEFLAGS: "2"

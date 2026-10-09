@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
-# Raspberry Pi 4 image: x86 SteamCMD through Box32 and Valheim through Box64.
-# Base-image digests are deliberately pinned; see UPSTREAM.md before updating.
+# ARM64 image: x86 SteamCMD through Box32 and Valheim through Box64.
+# Base-image digests are deliberately pinned; see docs/UPSTREAM.md before updating.
 
 ARG VALHEIM_SCRIPTS_IMAGE=ghcr.io/riptidewave93/arm64-valheim@sha256:1ebe7e5a31a8f12c0d852cb11695a526431dd6d1629b3bf3a33f88d7538eee49
 ARG STEAMCMD_IMAGE=ghcr.io/sonroyaalmerol/steamcmd-arm64@sha256:11ca8c6dd83931bc8a26f2b33eb7a6a452740ea55a9afc27aa744e68dcb448f8
@@ -9,7 +9,7 @@ FROM ${VALHEIM_SCRIPTS_IMAGE} AS valheim_scripts
 FROM ${STEAMCMD_IMAGE}
 
 USER root
-ENV ARM64_DEVICE=rpi4 \
+ENV ARM64_DEVICE=generic \
     DEBUGGER=/usr/local/bin/valheim-box64 \
     STEAM_PLATFORM=linux32
 

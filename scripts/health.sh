@@ -4,6 +4,15 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+echo '=== Host ==='
+printf 'architecture=%s\n' "$(uname -m)"
+if [[ -r /etc/os-release ]]; then
+  host_os="$(sed -n 's/^PRETTY_NAME=//p' /etc/os-release | head -n 1 | tr -d '"')"
+  printf 'os=%s\n' "${host_os:-unknown}"
+fi
+device_profile="$(sed -n 's/^ARM64_DEVICE=//p' "$ROOT_DIR/.env" 2>/dev/null | tail -n 1)"
+printf 'arm64_device=%s\n' "${device_profile:-generic}"
+echo
 echo '=== Compose ==='
 sudo docker compose ps -a
 echo
@@ -33,11 +42,23 @@ elif [[ -d "$ROOT_DIR/mods/BepInEx/plugins" ]]; then
 fi
 echo
 echo '=== Temperature / throttling ==='
-command -v vcgencmd >/dev/null && vcgencmd measure_temp || true
-command -v vcgencmd >/dev/null && vcgencmd get_throttled || true
+if command -v vcgencmd >/dev/null 2>&1; then
+  vcgencmd measure_temp || true
+  vcgencmd get_throttled || true
+elif [[ -r /sys/class/thermal/thermal_zone0/temp ]]; then
+  awk '{ printf "temperature=%.1fC\n", $1 / 1000 }' /sys/class/thermal/thermal_zone0/temp
+  echo 'throttling=unavailable (vcgencmd is not installed)'
+else
+  echo 'temperature=unavailable'
+  echo 'throttling=unavailable'
+fi
 echo
 echo '=== Optional overlay network ==='
-sudo zerotier-cli listnetworks 2>/dev/null || true
+if command -v zerotier-cli >/dev/null 2>&1; then
+  sudo zerotier-cli listnetworks 2>/dev/null || true
+else
+  echo 'ZeroTier is not installed'
+fi
 echo
 echo '=== Valheim UDP sockets ==='
 sudo ss -lunp | grep -E ':(2456|2457)([[:space:]]|$)' || true
