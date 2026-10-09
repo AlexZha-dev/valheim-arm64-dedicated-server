@@ -1,0 +1,12 @@
+.env
+config/worlds_local/
+config/backups/
+config/adminlist.txt
+config/bannedlist.txt
+config/permittedlist.txt
+config/*.vdf
+backups/
+data/
+steam-diagnostics/
+*.log
+.DS_Store

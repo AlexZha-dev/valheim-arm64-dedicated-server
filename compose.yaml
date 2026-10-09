@@ -1,0 +1,116 @@
+services:
+  valheim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: valheim-pi4-box32:local
+    platform: linux/arm64
+    container_name: valheim
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 180s
+    environment:
+      NAME: "${NAME:-Valheim Dedicated Server}"
+      PORT: "${PORT:-2456}"
+      WORLD: "${WORLD:-DedicatedWorld}"
+      PASSWORD: "${PASSWORD:?Set PASSWORD in .env}"
+      PUBLIC: "${PUBLIC:-0}"
+      CROSSPLAY: "${CROSSPLAY:-true}"
+      # Optional world difficulty/modifier flags, passed after the standard
+      # server arguments. Example: -preset hard -modifier raids none
+      SERVER_ARGS: "${SERVER_ARGS:-}"
+      # Platform IDs, separated by spaces or commas. Empty values leave the
+      # existing permission files unchanged.
+      ADMINLIST_IDS: "${ADMINLIST_IDS:-}"
+      BANNEDLIST_IDS: "${BANNEDLIST_IDS:-}"
+      PERMITTEDLIST_IDS: "${PERMITTEDLIST_IDS:-}"
+      SAVEDIR: "/config"
+      TZ: "${TZ:-UTC}"
+      SAVEINTERVAL: "${SAVEINTERVAL:-900}"
+      BACKUPS: "${BACKUPS:-4}"
+      BACKUPSHORT: "${BACKUPSHORT:-7200}"
+      BACKUPLONG: "${BACKUPLONG:-43200}"
+      BACKUPS_INTERVAL: "${BACKUPS_INTERVAL:-3600}"
+      BACKUPS_MAX_AGE: "${BACKUPS_MAX_AGE:-14}"
+      UPDATE_INTERVAL: "${UPDATE_INTERVAL:-0}"
+      SERVER_STOP_TIMEOUT: "${SERVER_STOP_TIMEOUT:-150}"
+      ARM64_DEVICE: "rpi4"
+      DEBUGGER: "/usr/local/bin/box64"
+      STEAM_PLATFORM: "linux32"
+      BOX64_AES: "0"
+      BOX64_PCLMULQDQ: "0"
+      BOX64_SHAEXT: "0"
+      BOX64_AVX: "0"
+      # More conservative dynarec settings improve stability on Pi 4.
+      BOX64_DYNAREC_BIGBLOCK: "0"
+      BOX64_DYNAREC_STRONGMEM: "3"
+      BOX64_DYNAREC_SAFEFLAGS: "2"
+      BOX64_DYNAREC_FASTROUND: "0"
+      BOX64_DYNAREC_FASTNAN: "0"
+      BOX64_DYNAREC_X87DOUBLE: "1"
+    volumes:
+      - ./config:/config
+      - ./data:/opt/valheim
+      - ./backups:/config/backups
+      - ./steam-diagnostics:/root/Steam/logs
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  valheim-backup:
+    image: alpine:3.22
+    platform: linux/arm64
+    container_name: valheim-backup
+    depends_on:
+      valheim:
+        condition: service_started
+    restart: unless-stopped
+    environment:
+      BACKUP_INTERVAL: "${BACKUP_INTERVAL:-3600}"
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-14}"
+      WORLD: "${WORLD:-DedicatedWorld}"
+    volumes:
+      - ./config:/config:ro
+      - ./backups/compose:/backups
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        interval="$${BACKUP_INTERVAL:-3600}"
+        retention="$${BACKUP_RETENTION_DAYS:-14}"
+        world="$${WORLD:-DedicatedWorld}"
+
+        case "$$interval" in
+          ''|*[!0-9]*) echo "BACKUP_INTERVAL must be a non-negative number of seconds" >&2; exit 1 ;;
+        esac
+        case "$$retention" in
+          ''|*[!0-9]*) echo "BACKUP_RETENTION_DAYS must be a non-negative number of days" >&2; exit 1 ;;
+        esac
+
+        backup_once() {
+          if [ ! -d "/config/worlds_local/$$world" ]; then
+            echo "World directory /config/worlds_local/$$world does not exist yet"
+            return 0
+          fi
+
+          stamp="$$(date -u +%Y%m%d-%H%M%S)"
+          tmp="/backups/.worlds-$$stamp.tar.gz.tmp"
+          final="/backups/worlds-$$stamp.tar.gz"
+          tar -czf "$$tmp" -C /config worlds_local
+          mv "$$tmp" "$$final"
+
+          if [ "$$retention" -gt 0 ]; then
+            find /backups -type f -name 'worlds-*.tar.gz' -mtime +"$$retention" -delete
+          fi
+          echo "Created $$final"
+        }
+
+        mkdir -p /backups
+        backup_once
+        if [ "$$interval" -eq 0 ]; then
+          echo "Periodic Compose backups disabled (BACKUP_INTERVAL=0)"
+          while :; do sleep 86400; done
+        fi
+        while sleep "$$interval"; do backup_once; done
