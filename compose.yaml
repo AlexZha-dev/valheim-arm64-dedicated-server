@@ -13,8 +13,13 @@ services:
       NAME: "${NAME:-Valheim Dedicated Server}"
       PORT: "${PORT:-2456}"
       WORLD: "${WORLD:-DedicatedWorld}"
-      PASSWORD: "${PASSWORD:?Set PASSWORD in .env}"
-      PUBLIC: "${PUBLIC:-0}"
+      # PASSWORD_FILE, when set, takes precedence over PASSWORD in the image.
+      # Keeping PASSWORD optional here permits a Docker-secret override.
+      PASSWORD: "${PASSWORD:-}"
+      PASSWORD_FILE: "${PASSWORD_FILE:-}"
+      # Do not interpolate the generic host variable PUBLIC: it is defined by
+      # Windows as C:\\Users\\Public and would override a .env value.
+      PUBLIC: "${SERVER_PUBLIC:-0}"
       CROSSPLAY: "${CROSSPLAY:-true}"
       # Optional world difficulty/modifier flags, passed after the standard
       # server arguments. Example: -preset hard -modifier raids none
@@ -25,15 +30,34 @@ services:
       BANNEDLIST_IDS: "${BANNEDLIST_IDS:-}"
       PERMITTEDLIST_IDS: "${PERMITTEDLIST_IDS:-}"
       SAVEDIR: "/config"
+      # Refuse to start if the persistent save directory is not a bind mount.
+      ALLOW_NO_VOLUME: "false"
+      # Set both to the Pi account's numeric IDs to avoid root-owned saves.
+      # Zero keeps the upstream image's root-compatible default.
+      PUID: "${PUID:-0}"
+      PGID: "${PGID:-0}"
       TZ: "${TZ:-UTC}"
       SAVEINTERVAL: "${SAVEINTERVAL:-900}"
       BACKUPS: "${BACKUPS:-4}"
       BACKUPSHORT: "${BACKUPSHORT:-7200}"
       BACKUPLONG: "${BACKUPLONG:-43200}"
+      # The image owns the only periodic archive job. BACKUPS_CRON, when set,
+      # overrides BACKUPS_INTERVAL.
       BACKUPS_INTERVAL: "${BACKUPS_INTERVAL:-3600}"
+      BACKUPS_CRON: "${BACKUPS_CRON:-}"
+      BACKUPS_DIRECTORY: "/config/backups"
       BACKUPS_MAX_AGE: "${BACKUPS_MAX_AGE:-14}"
+      BACKUPS_MAX_COUNT: "${BACKUPS_MAX_COUNT:-168}"
+      BACKUPS_ZIP: "${BACKUPS_ZIP:-true}"
       UPDATE_INTERVAL: "${UPDATE_INTERVAL:-0}"
+      UPDATE_IF_IDLE: "${UPDATE_IF_IDLE:-true}"
+      UPDATE_IDLE_CHECKS: "${UPDATE_IDLE_CHECKS:-5}"
+      UPDATE_IDLE_CHECK_INTERVAL: "${UPDATE_IDLE_CHECK_INTERVAL:-60}"
+      IDLE_DATAGRAM_WINDOW: "${IDLE_DATAGRAM_WINDOW:-3}"
+      IDLE_DATAGRAM_MAX_COUNT: "${IDLE_DATAGRAM_MAX_COUNT:-30}"
       SERVER_STOP_TIMEOUT: "${SERVER_STOP_TIMEOUT:-150}"
+      RESTART_CRON: "${RESTART_CRON:-}"
+      RESTART_IF_IDLE: "${RESTART_IF_IDLE:-true}"
       ARM64_DEVICE: "rpi4"
       DEBUGGER: "/usr/local/bin/box64"
       STEAM_PLATFORM: "linux32"
@@ -51,66 +75,11 @@ services:
     volumes:
       - ./config:/config
       - ./data:/opt/valheim
-      - ./backups:/config/backups
+      # Keep generated rolling archives outside config/worlds_local.
+      - ./backups/valheim:/config/backups
       - ./steam-diagnostics:/root/Steam/logs
     logging:
       driver: json-file
       options:
         max-size: "20m"
         max-file: "5"
-
-  valheim-backup:
-    image: alpine:3.22
-    platform: linux/arm64
-    container_name: valheim-backup
-    depends_on:
-      valheim:
-        condition: service_started
-    restart: unless-stopped
-    environment:
-      BACKUP_INTERVAL: "${BACKUP_INTERVAL:-3600}"
-      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-14}"
-      WORLD: "${WORLD:-DedicatedWorld}"
-    volumes:
-      - ./config:/config:ro
-      - ./backups/compose:/backups
-    command:
-      - /bin/sh
-      - -ec
-      - |
-        interval="$${BACKUP_INTERVAL:-3600}"
-        retention="$${BACKUP_RETENTION_DAYS:-14}"
-        world="$${WORLD:-DedicatedWorld}"
-
-        case "$$interval" in
-          ''|*[!0-9]*) echo "BACKUP_INTERVAL must be a non-negative number of seconds" >&2; exit 1 ;;
-        esac
-        case "$$retention" in
-          ''|*[!0-9]*) echo "BACKUP_RETENTION_DAYS must be a non-negative number of days" >&2; exit 1 ;;
-        esac
-
-        backup_once() {
-          if [ ! -d "/config/worlds_local/$$world" ]; then
-            echo "World directory /config/worlds_local/$$world does not exist yet"
-            return 0
-          fi
-
-          stamp="$$(date -u +%Y%m%d-%H%M%S)"
-          tmp="/backups/.worlds-$$stamp.tar.gz.tmp"
-          final="/backups/worlds-$$stamp.tar.gz"
-          tar -czf "$$tmp" -C /config worlds_local
-          mv "$$tmp" "$$final"
-
-          if [ "$$retention" -gt 0 ]; then
-            find /backups -type f -name 'worlds-*.tar.gz' -mtime +"$$retention" -delete
-          fi
-          echo "Created $$final"
-        }
-
-        mkdir -p /backups
-        backup_once
-        if [ "$$interval" -eq 0 ]; then
-          echo "Periodic Compose backups disabled (BACKUP_INTERVAL=0)"
-          while :; do sleep 86400; done
-        fi
-        while sleep "$$interval"; do backup_once; done

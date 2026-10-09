@@ -8,7 +8,7 @@ The Raspberry Pi runs the ARM64 operating system, while SteamCMD and the Valheim
 
 ## What is included
 
-- `compose.yaml` - Valheim and automatic-backup services.
+- `compose.yaml` - Valheim with its integrated, retention-limited backup scheduler.
 - `Dockerfile` - Raspberry Pi 4 image using Box32 for SteamCMD and Box64 for Valheim.
 - `.env.example` - safe template for server settings; copy it to `.env` before starting.
 - `scripts/prepare-directories.sh` - creates persistent data directories.
@@ -109,11 +109,11 @@ At minimum, set a unique password with at least five characters:
 NAME=Valheim Dedicated Server
 WORLD=DedicatedWorld
 PASSWORD=replace-with-a-strong-password
-PUBLIC=0
+SERVER_PUBLIC=0
 CROSSPLAY=true
 ```
 
-`WORLD` is the directory name of the save without `.db`, `.db2`, `.fwl` or `.fwl2`. The default `DedicatedWorld` is only a placeholder; change it to the name of the world you copy to the Pi.
+`WORLD` is the directory name of the save without `.db`, `.db2`, `.fwl` or `.fwl2`. The default `DedicatedWorld` is only a placeholder; change it to the name of the world you copy to the Pi. `SERVER_PUBLIC` is deliberately not named `PUBLIC`: Windows reserves `PUBLIC` for `C:\\Users\\Public`, which otherwise overrides the Compose setting.
 
 Protect the file and create persistent directories:
 
@@ -131,10 +131,10 @@ The default configuration uses Crossplay:
 
 ```dotenv
 CROSSPLAY=true
-PUBLIC=0
+SERVER_PUBLIC=0
 ```
 
-`PUBLIC=0` keeps the server out of the public browser list. Players join using the Join Code shown by the game/server UI. Crossplay uses the relay service, so router port forwarding is normally not required. The Pi still needs outbound Internet access.
+`SERVER_PUBLIC=0` keeps the server out of the public browser list. Players join using the Join Code shown by the game/server UI. Crossplay uses the relay service, so router port forwarding is normally not required. The Pi still needs outbound Internet access.
 
 Start the services:
 
@@ -160,7 +160,7 @@ Crossplay remains the recommended default. For a local-only or private-overlay s
 
 ```dotenv
 CROSSPLAY=false
-PUBLIC=0
+SERVER_PUBLIC=0
 ```
 
 Players then connect to the Pi's reachable address on UDP port `2456` (for example, `192.168.1.20:2456` on a LAN or the Pi's overlay address on a private VPN). Allow UDP ports `2456-2457` on the interface used by the players. Do not run the ZeroTier firewall helper unless you actually use ZeroTier:
@@ -241,21 +241,48 @@ sudo docker compose up -d --force-recreate --no-build
 
 ## 8. Backups and updates
 
-The `valheim-backup` sidecar archives `config/worlds_local` periodically. Defaults are one archive per hour and 14 days of retention:
+There is one periodic archive scheduler: the `valheim-backup` program included in the Valheim image. It creates a ZIP of `worlds_local` in `backups/valheim` on startup and then every hour. It removes old archives by both age and count; the first limit reached wins:
 
 ```dotenv
-BACKUP_INTERVAL=3600
-BACKUP_RETENTION_DAYS=14
+# Four emergency copies maintained by Valheim itself beside the world.
+BACKUPS=4
+
+# Image-managed rolling archives in ./backups/valheim.
+BACKUPS_INTERVAL=3600
+BACKUPS_MAX_AGE=14
+BACKUPS_MAX_COUNT=168
+BACKUPS_ZIP=true
 ```
 
-Archives are stored in `backups/compose`. The image also creates its own in-game backups under `config/backups`.
+At the default hourly interval, `BACKUPS_MAX_COUNT=168` caps the rolling set at roughly seven days even if `BACKUPS_MAX_AGE` is larger. Use `336` if the available disk space permits keeping up to 14 days of hourly archives. `BACKUPS_CRON` may replace the interval when a specific schedule is needed.
+
+Valheim itself also maintains the `WORLD_backup_auto-*` copies inside `config/worlds_local`; their count is controlled by `BACKUPS`. Do not put any backup directory inside `worlds_local`, otherwise every archive would include older archives.
 
 Create and verify a full manual backup:
 
 ```bash
 sudo ./scripts/backup.sh
-ls -lah backups backups/compose config/backups
+ls -lah backups/manual backups/valheim config/worlds_local
 ```
+
+The manual archive contains `config` (worlds and access lists), is made only after a clean server stop, and is verified before the server is started again. `MANUAL_BACKUP_RETENTION_DAYS=30` controls its cleanup; set it to `0` to retain manual archives indefinitely.
+
+### Migrating from the previous duplicate-backup setup
+
+Older revisions created duplicate `.tar.gz` archives with a separate Compose sidecar. The following preserves all existing files, moves the image-created ZIP archives into their new managed directory, and removes only the obsolete sidecar container:
+
+```bash
+cd /srv/valheim
+sudo docker compose stop -t 180
+sudo docker stop -t 30 valheim-backup 2>/dev/null || true
+stamp=$(date +%Y%m%d-%H%M%S)
+sudo install -d -m 0750 backups/valheim backups/legacy
+sudo find backups -maxdepth 1 -type f -name 'worlds-*.zip' -exec mv -t backups/valheim -- {} +
+if [ -d backups/compose ]; then sudo mv backups/compose "backups/legacy/compose-$stamp"; fi
+sudo docker compose up -d --remove-orphans --no-build
+```
+
+Replace any legacy `PUBLIC=...` line in `.env` with `SERVER_PUBLIC=...` before starting. The old `.tar.gz` files stay under `backups/legacy` and are not deleted automatically. Inspect them, copy any you want to keep elsewhere, and remove them manually only when you are satisfied with the new backups.
 
 To update the image, stop it gracefully, rebuild and start it again:
 
@@ -298,8 +325,9 @@ The game server is still running when `logs -f` is closed. Check `docker compose
 
 ```text
 /srv/valheim/config/worlds_local   world saves
-/srv/valheim/config/backups        Valheim built-in backups
-/srv/valheim/backups               manual and sidecar archives
+/srv/valheim/backups/valheim       hourly ZIP archives, automatically pruned
+/srv/valheim/backups/manual        verified manual archives, age-pruned
+/srv/valheim/backups/legacy        preserved pre-migration archives, never auto-pruned
 /srv/valheim/data                  downloaded Valheim files
 /srv/valheim/steam-diagnostics     SteamCMD logs
 ```

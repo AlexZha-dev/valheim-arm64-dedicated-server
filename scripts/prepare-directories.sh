@@ -4,9 +4,9 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 mkdir -p "$ROOT_DIR/config/worlds_local" \
-         "$ROOT_DIR/config/backups" \
          "$ROOT_DIR/data" \
-         "$ROOT_DIR/backups" \
+         "$ROOT_DIR/backups/valheim" \
+         "$ROOT_DIR/backups/manual" \
          "$ROOT_DIR/steam-diagnostics"
 
 echo "Directories are ready: $ROOT_DIR"

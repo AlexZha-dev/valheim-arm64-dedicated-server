@@ -24,7 +24,7 @@ The recommended `.env` values are:
 
 ```dotenv
 CROSSPLAY=true
-PUBLIC=0
+SERVER_PUBLIC=0
 ```
 
 Watch registration messages:
@@ -41,7 +41,7 @@ For a LAN or private VPN/overlay connection:
 
 ```dotenv
 CROSSPLAY=false
-PUBLIC=0
+SERVER_PUBLIC=0
 ```
 
 Players connect to the Pi address on UDP `2456`. Check the sockets:
@@ -61,31 +61,32 @@ sudo ufw status verbose
 
 ```bash
 sudo ./scripts/backup.sh
-find backups -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %p\n' | sort
+find backups/manual -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %p\n' | sort
+find backups/valheim -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %p\n' | sort
 ls -lah config/worlds_local
-ls -lah config/backups backups/compose
+ls -lah backups/manual backups/valheim
 ```
 
 The `SAVEINTERVAL` value is in seconds. For example, `SAVEINTERVAL=600` saves approximately every 10 minutes.
 
-## Automatic backup sidecar
+## Automatic rolling backups
 
-```bash
-sudo docker compose ps valheim-backup
-sudo docker compose logs -f --tail=50 valheim-backup
-```
-
-Set the interval and retention in `.env`:
+The Valheim image creates the hourly ZIP archives itself; there is no second backup sidecar. Set the interval and two retention limits in `.env`:
 
 ```dotenv
-BACKUP_INTERVAL=3600
-BACKUP_RETENTION_DAYS=14
+BACKUPS_INTERVAL=3600
+BACKUPS_MAX_AGE=14
+BACKUPS_MAX_COUNT=168
+BACKUPS_ZIP=true
 ```
 
-Apply a changed interval:
+`BACKUPS_MAX_COUNT=168` is roughly one week of hourly archives. A backup is deleted as soon as either its age or the maximum count is exceeded. `BACKUPS_CRON` overrides `BACKUPS_INTERVAL` if it is set.
+
+Apply a changed schedule or retention:
 
 ```bash
-sudo docker compose up -d --force-recreate valheim-backup
+sudo docker compose up -d --force-recreate --no-build valheim
+sudo docker compose logs --tail=100 valheim | grep -i backup
 ```
 
 ## Difficulty and world modifiers
