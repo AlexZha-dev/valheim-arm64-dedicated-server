@@ -41,6 +41,20 @@ backups and optional mods in persistent host directories.
 No world, password, account credential, administrator ID or host-specific
 address is included in the repository.
 
+## Documentation
+
+Start here based on what you need to do:
+
+| Guide | Use it for |
+| --- | --- |
+| [Installation](docs/INSTALLATION.md) | Docker setup, deployment, world import and connection modes |
+| [Configuration](docs/CONFIGURATION.md) | Every supported `.env` setting, difficulty and access control |
+| [Operations](docs/OPERATIONS.md) | Start/stop, logs, backups, updates, health and troubleshooting |
+| [Mods](docs/MODS.md) | Safe BepInEx packaging, testing and recovery |
+| [Upstream maintenance](docs/UPSTREAM.md) | Pinned images and controlled dependency updates |
+| [Security policy](SECURITY.md) | Secret handling and private vulnerability reports |
+| [Contributing](CONTRIBUTING.md) | Validation rules and pull-request expectations |
+
 ## Compatibility
 
 | Host | Profile | Status |
@@ -128,18 +142,6 @@ These paths and `.env` are excluded from Git and the Docker build context.
 > Never copy a world over a running server. Stop it gracefully and create a
 > manual backup first. Do not run `docker compose down -v` or delete `config`
 > when the world must be preserved.
-
-## Documentation
-
-| Guide | Use it for |
-| --- | --- |
-| [Installation](docs/INSTALLATION.md) | Docker setup, deployment, world import and connection modes |
-| [Configuration](docs/CONFIGURATION.md) | Every supported `.env` setting, difficulty and access control |
-| [Operations](docs/OPERATIONS.md) | Start/stop, logs, backups, updates, health and troubleshooting |
-| [Mods](docs/MODS.md) | Safe BepInEx packaging, testing and recovery |
-| [Upstream maintenance](docs/UPSTREAM.md) | Pinned images and controlled dependency updates |
-| [Security policy](SECURITY.md) | Secret handling and private vulnerability reports |
-| [Contributing](CONTRIBUTING.md) | Validation rules and pull-request expectations |
 
 ## License and third-party software
 
