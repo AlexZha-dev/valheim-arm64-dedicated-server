@@ -1,4 +1,4 @@
-# Installation
+# Install a Valheim Dedicated Server on ARM64 Linux
 
 This guide installs the server on a clean Linux ARM64 host. Commands are tested
 on Raspberry Pi OS Lite 64-bit, which is Debian-based. On another distribution,

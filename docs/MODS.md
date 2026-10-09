@@ -1,4 +1,4 @@
-# Optional BepInEx mods
+# Optional BepInEx Mods for the Valheim ARM64 Server
 
 The server is vanilla unless `MODS_ENABLED=true` is set in `.env`. Mods execute
 third-party code and may permanently change a world. The server owner is

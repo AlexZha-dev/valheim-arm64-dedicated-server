@@ -2,8 +2,10 @@
 
 # Valheim ARM64 Dedicated Server
 
-Production-minded Docker Compose deployment for a Valheim dedicated server on
-64-bit ARM Linux.
+Production-minded Docker Compose deployment for hosting a Valheim dedicated
+server on Raspberry Pi 4 and other 64-bit ARM Linux devices. It provides a
+Crossplay-ready Valheim server with Join Code support, persistent worlds,
+automatic backups and optional BepInEx mods.
 
 ![Platform](https://img.shields.io/badge/platform-Linux%20ARM64-222222?style=flat-square)
 ![Docker Compose](https://img.shields.io/badge/runtime-Docker%20Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
@@ -29,8 +31,9 @@ Production-minded Docker Compose deployment for a Valheim dedicated server on
 > profile, relevant Compose output and a sanitized log excerpt. Never include
 > passwords, tokens, private IP addresses or world files.
 
-Valheim and SteamCMD ship x86 Linux binaries. This image runs SteamCMD through
-Box32 and the dedicated server through Box64, while keeping worlds, game files,
+Valheim and SteamCMD ship x86 Linux binaries. This deployment runs SteamCMD
+through Box32 and the dedicated server through Box64, allowing the official
+Valheim Linux server to run on ARM64 hardware while keeping worlds, game files,
 backups and optional mods in persistent host directories.
 
 ## Highlights

@@ -1,4 +1,4 @@
-# Configuration reference
+# Valheim ARM64 Server Configuration Reference
 
 Docker Compose reads server settings from `/srv/valheim/.env`. Create it from
 the tracked template and keep it private:
