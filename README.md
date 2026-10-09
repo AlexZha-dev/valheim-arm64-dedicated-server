@@ -23,6 +23,12 @@ Production-minded Docker Compose deployment for a Valheim dedicated server on
 > 64-bit with `ARM64_DEVICE=rpi4`. Other Linux ARM64 devices use the same stack
 > through a selectable Box64 profile, but have not been tested by this project.
 
+> [!IMPORTANT]
+> If you run into a problem, please [open an Issue](https://github.com/AlexZha-dev/valheim-arm64-dedicated-server/issues)
+> with your host model, operating-system version, selected `ARM64_DEVICE`
+> profile, relevant Compose output and a sanitized log excerpt. Never include
+> passwords, tokens, private IP addresses or world files.
+
 Valheim and SteamCMD ship x86 Linux binaries. This image runs SteamCMD through
 Box32 and the dedicated server through Box64, while keeping worlds, game files,
 backups and optional mods in persistent host directories.
