@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# ARM64 image: x86 SteamCMD through Box32 and Valheim through Box64.
+# ARM64 image: x86_64 SteamCMD and Valheim through Box64.
 # Base-image digests are deliberately pinned; see docs/UPSTREAM.md before updating.
 
 ARG VALHEIM_SCRIPTS_IMAGE=ghcr.io/riptidewave93/arm64-valheim@sha256:1ebe7e5a31a8f12c0d852cb11695a526431dd6d1629b3bf3a33f88d7538eee49
@@ -11,7 +11,7 @@ FROM ${STEAMCMD_IMAGE}
 USER root
 ENV ARM64_DEVICE=generic \
     DEBUGGER=/usr/local/bin/valheim-box64 \
-    STEAM_PLATFORM=linux32
+    STEAM_PLATFORM=linux64
 
 # The paths below are a contract with the pinned valheim_scripts image.
 COPY --from=valheim_scripts /usr/local/lib/valheim/bootstrap /usr/local/lib/valheim/bootstrap
@@ -20,7 +20,7 @@ COPY --from=valheim_scripts /usr/local/bin/valheim-backup /usr/local/bin/valheim
 COPY --from=valheim_scripts /usr/local/bin/valheim-updater /usr/local/bin/valheim-updater
 COPY --from=valheim_scripts /usr/lib/x86_64-linux-gnu/libogg.so.0 /usr/lib/x86_64-linux-gnu/libogg.so.0
 
-COPY --chmod=0755 docker/patch-upstream-for-box32.sh /usr/local/sbin/patch-upstream-for-box32
+COPY --chmod=0755 docker/patch-upstream-for-steamcmd.sh /usr/local/sbin/patch-upstream-for-steamcmd
 COPY --chmod=0755 docker/valheim-box64.sh /usr/local/bin/valheim-box64
 
 RUN apt-get update \
@@ -28,10 +28,10 @@ RUN apt-get update \
         tini zip libatomic1 libpulse0 libpulse-mainloop-glib0 \
         libsdl2-2.0-0 libsdl3-0 \
     && chown -R root:root /home/steam/steamcmd \
-    && /usr/local/sbin/patch-upstream-for-box32 \
+    && /usr/local/sbin/patch-upstream-for-steamcmd \
     && bash -n /usr/local/bin/valheim-box64 \
     && mkdir -p /opt/valheim \
-    && rm -f /usr/local/sbin/patch-upstream-for-box32 \
+    && rm -f /usr/local/sbin/patch-upstream-for-steamcmd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

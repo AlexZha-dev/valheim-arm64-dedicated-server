@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: valheim-arm64-box32:local
+    image: valheim-arm64:local
     platform: linux/arm64
     container_name: valheim
     network_mode: host
@@ -64,7 +64,9 @@ services:
       # optimized profiles such as rpi4 and rk3588 are opt-in through .env.
       ARM64_DEVICE: "${ARM64_DEVICE:-generic}"
       DEBUGGER: "/usr/local/bin/valheim-box64"
-      STEAM_PLATFORM: "linux32"
+      # Current SteamCMD ships an x86_64 launcher. Keep it on Box64: the
+      # linux32 launcher currently aborts in Box32 after self-updating.
+      STEAM_PLATFORM: "linux64"
       BOX64_AES: "0"
       BOX64_PCLMULQDQ: "0"
       BOX64_SHAEXT: "0"

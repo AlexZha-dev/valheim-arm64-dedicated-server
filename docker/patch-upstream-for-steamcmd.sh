@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Adapt the pinned arm64-valheim control scripts to the Box32 SteamCMD image.
-# This is intentionally strict: changed upstream source must fail the build,
-# then be reviewed and updated together with the digest in Dockerfile.
+# Adapt the pinned arm64-valheim control scripts to the x86_64 SteamCMD bundled
+# with the Box64 runtime image.
 set -Eeuo pipefail
 
 readonly bootstrap=/usr/local/lib/valheim/bootstrap
 readonly common=/usr/local/lib/valheim/common
 readonly steamcmd_dir=/home/steam/steamcmd
+readonly steamcmd_binary="$steamcmd_dir/linux64/steamcmd"
 
 require_file() {
   local file="$1"
@@ -34,8 +34,8 @@ require_file /usr/lib/x86_64-linux-gnu/libogg.so.0
 [[ -x "$bootstrap" ]] || chmod 0755 "$bootstrap"
 [[ -x /usr/local/bin/valheim-backup ]] || chmod 0755 /usr/local/bin/valheim-backup
 [[ -x /usr/local/bin/valheim-updater ]] || chmod 0755 /usr/local/bin/valheim-updater
-[[ -x "$steamcmd_dir/linux32/steamcmd" ]] || {
-  echo "Box32 SteamCMD is missing: $steamcmd_dir/linux32/steamcmd" >&2
+[[ -x "$steamcmd_binary" ]] || {
+  echo "x86_64 SteamCMD is missing: $steamcmd_binary" >&2
   exit 1
 }
 
@@ -47,14 +47,14 @@ sed -i \
   -e "s|^STEAMCMD_DIR=.*|STEAMCMD_DIR=\"$steamcmd_dir\"|" \
   "$common"
 sed -i \
-  -e 's|/linuxarm64/steamcmd|/linux32/steamcmd|g' \
+  -e 's|/linuxarm64/steamcmd|/linux64/steamcmd|g' \
   -e 's|steamcmd_linuxarm64\.tar\.gz|steamcmd_linux.tar.gz|g' \
   "$bootstrap"
 
 grep -qFx "STEAMCMD_DIR=\"$steamcmd_dir\"" "$common"
-grep -qF "\${STEAMCMD_DIR}/linux32/steamcmd" "$bootstrap"
+grep -qF "\${STEAMCMD_DIR}/linux64/steamcmd" "$bootstrap"
 grep -qF 'steamcmd_linux.tar.gz' "$bootstrap"
 ! grep -qF 'linuxarm64' "$bootstrap"
 
 bash -n "$bootstrap" "$common" /usr/local/bin/valheim-backup /usr/local/bin/valheim-updater
-echo 'Applied and verified the Box32 SteamCMD adaptation.'
+echo 'Applied and verified the x86_64 SteamCMD adaptation.'
