@@ -31,10 +31,12 @@ automatic backups and optional BepInEx mods.
 > profile, relevant Compose output and a sanitized log excerpt. Never include
 > passwords, tokens, private IP addresses or world files.
 
-Valheim and SteamCMD ship x86 Linux binaries. This deployment runs SteamCMD
-through Box32 and the dedicated server through Box64, allowing the official
-Valheim Linux server to run on ARM64 hardware while keeping worlds, game files,
-backups and optional mods in persistent host directories.
+Valheim and SteamCMD ship x86_64 Linux binaries. This deployment runs both
+through Box64, allowing the official Valheim Linux server to run on ARM64
+hardware while keeping worlds, game files, backups and optional mods in
+persistent host directories. The 32-bit SteamCMD path is intentionally avoided
+because current SteamCMD builds require libc symbols missing from older Box32
+runtimes.
 
 ## Highlights
 
@@ -84,7 +86,7 @@ flowchart LR
     C[Valheim clients] -->|Join Code| P[PlayFab relay]
     C -->|LAN / private overlay| H[ARM64 Linux host]
     P --> H
-    H --> V[Valheim container<br/>Box32 + Box64]
+    H --> V[Valheim container<br/>Box64]
     V --> W[(config / worlds)]
     V --> D[(downloaded game data)]
     V --> B[(rolling backups)]
@@ -155,6 +157,6 @@ These paths and `.env` are excluded from Git and the Docker build context.
 ## License and third-party software
 
 The deployment configuration is available under the [MIT License](LICENSE).
-Valheim, SteamCMD, Box32, Box64, BepInEx and the referenced container images
+Valheim, SteamCMD, Box64, BepInEx and the referenced container images
 remain subject to their own licenses and terms. This project does not
 redistribute proprietary game files.

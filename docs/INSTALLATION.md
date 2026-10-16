@@ -247,6 +247,6 @@ sudo docker compose build --pull
 sudo docker compose up -d --no-build --force-recreate valheim
 ```
 
-The old `valheim-pi4-box32:local` image may remain unused after migration. Do
-not remove it until the new container has loaded the correct world and remained
-stable.
+Old `valheim-pi4-box32:local` and `valheim-arm64-box32:local` images may remain
+unused after migration. Do not remove them until the new container has loaded
+the correct world and remained stable.
